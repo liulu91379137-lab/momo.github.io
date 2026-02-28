@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AIA 保费优惠+复利计算 | 移动端联动版</title>
+    <style>
+        /* 全局样式重置 & 基础移动端样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            padding: 15px;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        /* 模块分隔样式 */
+        .module {
+            padding: 20px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .module:last-child {
+            border-bottom: none;
+        }
+        .module-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #E63946;
+            text-align: center;
+        }
+        .compound-title {
+            border-bottom-color: #3498db;
+        }
+
+        /* 保费优惠模块样式 */
+        .header {
+            background-color: #E63946;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header svg {
+            height: 40px;
+            margin-bottom: 10px;
+            fill: white;
+        }
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .header .period {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            font-size: 15px;
+            color: #2c3e50;
+        }
+        input {
+            width: 100%;
+            padding: 14px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 18px;
+            text-align: left; /* 左对齐 */
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus {
+            border-color: #E63946;
+        }
+        .note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #E63946;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+            touch-action: manipulation;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #c12a36;
+        }
+        .condition-alert {
+            margin: 15px 0;
+            padding: 12px;
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #856404;
+        }
+        .condition-alert strong {
+            color: #E63946;
+        }
+        .coupon-rule {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e8f4f8;
+            border-left: 4px solid #4299e1;
+            border-radius: 4px;
+            font-size: 13px;
+            color: #2d3748;
+        }
+
+        /* 复利计算模块样式 */
+        .compound-btn {
+            background-color: #27ae60;
+        }
+        .compound-btn:hover {
+            background-color: #219653;
+        }
+        .compound-input {
+            border-color: #ddd;
+            font-size: 15px;
+            padding: 12px 10px;
+            text-align: left; /* 左对齐 */
+        }
+        .compound-input:focus {
+            border-color: #3498db;
+        }
+        /* 联动输入框标注 */
+        .link-note {
+            color: #16a34a;
+            font-weight: 500;
+        }
+
+        /* 结果表格通用样式 */
+        .result-section {
+            padding: 15px 0;
+            display: none;
+        }
+        .result-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 550px;
+        }
+        th, td {
+            padding: 12px 10px;
+            text-align: right;
+            border: 1px solid #eee;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #495057;
+        }
+        td:first-child, th:first-child {
+            text-align: left;
+        }
+
+        /* 高亮样式 */
+        .highlight-red {
+            background-color: #fef2f2;
+            color: #E63946;
+            font-weight: bold;
+        }
+        .highlight-total {
+            background-color: #e6f4ff;
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .highlight-coupon {
+            background-color: #dcfce7;
+            color: #16a34a;
+            font-weight: bold;
+        }
+        .highlight-grand {
+            background-color: #fef9c3;
+            color: #92400e;
+            font-weight: bold;
+            font-size: 15px;
+        }
+        .highlight-interest {
+            background-color: #fff3cd;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .highlight-balance {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+        .total-interest {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .compound-th {
+            background-color: #3498db;
+            color: white;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 保费优惠计算模块 -->
+        <div class="module">
+            <div class="header">
+                <svg viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="#E63946"/>
+                    <path d="M30,70 C30,50 40,40 50,40 C60,40 70,50 70,70 C70,80 65,85 60,85 C55,85 50,80 50,70 C50,60 45,55 40,55 C35,55 30,60 30,70 Z" fill="white"/>
+                </svg>
+                <h1>寰宇盈活储蓄保险计划 (5年缴)</h1>
+                <div class="period">推广期：2026年1月1日 至 2026年3月31日</div>
+            </div>
+
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="premium">基本计划年度化保费 (美元)</label>
+                    <!-- 增加oninput事件触发联动 -->
+                    <input type="number" id="premium" placeholder="请输入年缴保费，例如 100000" value="100000" step="1000" oninput="syncAmount(this.value)">
+                    <div class="note">示例：10万美金 x 5年，此处输入 100000<br>输入后下方复利计算金额将<strong>自动同步</strong></div>
+                </div>
+
+                <div class="condition-alert">
+                    ⚠️ <strong>额外3%回赠条件</strong>：需同时投保指定危疾计划，且危疾计划原投保额 ≥ 50,000 美元。
+                </div>
+
+                <div class="coupon-rule">
+                    🎫 <strong>优惠券规则</strong>：年缴保费≥12,500 USD 赠1张1250 USD券；≥20,000 USD 赠2张（最高2张），可抵扣首年保费。
+                </div>
+
+                <button onclick="calculatePremium()">计算首年回赠优惠</button>
+            </div>
+
+            <!-- 保费优惠结果区域 -->
+            <div class="result-section" id="premiumResultSection">
+                <h3>首年保费回赠计算结果</h3>
+                <div class="table-wrap">
+                    <table id="premiumResultTable">
+                        <thead>
+                            <tr>
+                                <th>保费档位</th>
+                                <th>基本优惠</th>
+                                <th>额外优惠 ▲</th>
+                                <th>总优惠率</th>
+                                <th>优惠券抵扣 (USD)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="premiumTableBody">
+                            <!-- JS 动态填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4年预缴复利计算模块 -->
+        <div class="module">
+            <h2 class="module-title compound-title">💰 4年预缴复利扣除计算器</h2>
+            
+            <div class="input-group">
+                <label>初始总金额 (美元) <span class="link-note">「自动计算：每年扣除×4」</span></label>
+                <input type="number" id="totalAmount" placeholder="自动计算" value="400000" class="compound-input" readonly>
+            </div>
+            <div class="input-group">
+                <label>每年扣除金额 (美元) <span class="link-note">「同步上方保费金额」</span></label>
+                <input type="number" id="withdrawal" placeholder="自动同步" value="100000" class="compound-input" readonly>
+            </div>
+            <div class="input-group">
+                <label>复利利率 (年 %)</label>
+                <input type="number" id="rate" placeholder="例如: 3.8" value="3.8" step="0.01" class="compound-input">
+            </div>
+
+            <button class="compound-btn" onclick="calculateCompound()">生成复利计算表格</button>
+
+            <!-- 复利结果展示区域 -->
+            <div class="result-section" id="compoundResultContainer">
+                <h3>复利计算结果详情</h3>
+                <div class="table-wrap">
+                    <table id="compoundResultTable">
+                        <thead>
+                            <tr>
+                                <th class="compound-th">年份</th>
+                                <th class="compound-th">年初本金</th>
+                                <th class="compound-th">当年利息</th>
+                                <th class="compound-th">扣除前总额</th>
+                                <th class="compound-th">当年扣除</th>
+                                <th class="compound-th">年末余额</th>
+                            </tr>
+                        </thead>
+                        <tbody id="compoundResultBody">
+                            <!-- 计算结果自动插入 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --------------- 核心联动函数 ---------------
+        function syncAmount(premiumValue) {
+            // 获取输入值并转为数字，非数字则置0
+            const amount = parseFloat(premiumValue) || 0;
+            // 同步到「每年扣除金额」
+            document.getElementById('withdrawal').value = amount;
+            // 计算初始总金额 = 每年扣除金额 × 4
+            document.getElementById('totalAmount').value = amount * 4;
+        }
+
+        // --------------- 保费优惠计算逻辑 ---------------
+        const rebateRules = [
+            { min: 0, max: 9999, base: 5.0, extra: 3.0 },
+            { min: 10000, max: 29999, base: 10.0, extra: 3.0 },
+            { min: 30000, max: 49999, base: 12.0, extra: 3.0 },
+            { min: 50000, max: 99999, base: 14.0, extra: 3.0 },
+            { min: 100000, max: 199999, base: 16.0, extra: 3.0 },
+            { min: 200000, max: Infinity, base: 18.0, extra: 3.0 }
+        ];
+
+        function calculatePremium() {
+            const premium = parseFloat(document.getElementById('premium').value) || 0;
+            
+            if (premium <= 0) {
+                alert("请输入有效的年度化保费金额！");
+                return;
+            }
+
+            // 匹配档位规则
+            const rule = rebateRules.find(rule => premium >= rule.min && premium <= rule.max);
+            if (!rule) {
+                alert("未找到对应档位规则");
+                return;
+            }
+
+            // 计算各项数值
+            const baseRate = rule.base;
+            const extraRate = rule.extra;
+            const totalRate = baseRate + extraRate;
+            
+            const baseAmount = premium * baseRate / 100;
+            const extraAmount = premium * extraRate / 100;
+            const totalAmount = premium * totalRate / 100;
+
+            // 计算优惠券抵扣 (修正后的核心逻辑)
+            let couponNum = 0;
+            let couponAmount = 0;
+            if (premium >= 20000) {
+                couponNum = 2; // 最高2张
+                couponAmount = 2 * 1250;
+            } else if (premium >= 12500) {
+                couponNum = 1; // 1张
+                couponAmount = 1 * 1250;
+            }
+            const couponText = couponNum > 0 ? 
+                `${couponNum}张×1250 = $${couponAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}` : 
+                "无";
+
+            // 计算总额
+            const grandTotal = baseAmount + couponAmount;
+
+            // 生成档位描述
+            let rangeText = "";
+            if (rule.max === Infinity) {
+                rangeText = "200,000 及以上";
+            } else if (rule.min === 0) {
+                rangeText = "少于 10,000";
+            } else {
+                rangeText = `${(rule.min).toLocaleString()} - 少于 ${(rule.max + 1).toLocaleString()}`;
+            }
+
+            // 填充表格
+            const tableBody = document.getElementById('premiumTableBody');
+            tableBody.innerHTML = `
+                <tr>
+                    <td>${rangeText}</td>
+                    <td class="highlight-red">${baseRate}%</td>
+                    <td class="highlight-red">+${extraRate}%</td>
+                    <td class="highlight-total">${totalRate}%</td>
+                    <td class="highlight-coupon">${couponText}</td>
+                </tr>
+                <tr>
+                    <td><strong>首年回赠明细</strong></td>
+                    <td>基本回赠</td>
+                    <td>额外回赠</td>
+                    <td><strong>合计回赠</strong></td>
+                    <td rowspan="2" class="highlight-coupon">总计抵扣：$${couponAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                </tr>
+                <tr>
+                    <td><strong>金额 (USD)</strong></td>
+                    <td>$${baseAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td>$${extraAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    <td class="highlight-total">$${totalAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                </tr>
+                <tr>
+                    <td colspan="4" class="highlight-grand"><strong>基本回赠 + 优惠券抵扣 总额</strong></td>
+                    <td class="highlight-grand">$${grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                </tr>
+            `;
+
+            // 显示结果并滚动
+            document.getElementById('premiumResultSection').style.display = 'block';
+            document.getElementById('premiumResultSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // --------------- 复利计算逻辑 ---------------
+        function calculateCompound() {
+            const totalAmount = parseFloat(document.getElementById('totalAmount').value);
+            const annualWithdrawal = parseFloat(document.getElementById('withdrawal').value);
+            const rate = parseFloat(document.getElementById('rate').value) / 100;
+            const years = 4; // 固定计算4年
+
+            if (isNaN(totalAmount) || isNaN(annualWithdrawal) || isNaN(rate)) {
+                alert("请输入有效的利率数值！");
+                return;
+            }
+
+            let currentBalance = totalAmount;
+            let tableHtml = '';
+            let totalInterest = 0;
+
+            for (let year = 1; year <= years; year++) {
+                // 计算当年利息
+                const interestEarned = currentBalance * rate;
+                totalInterest += interestEarned;
+                
+                // 计算扣除前总额和年末余额
+                const balanceBeforeWithdrawal = currentBalance + interestEarned;
+                const balanceAfterWithdrawal = Math.max(balanceBeforeWithdrawal - annualWithdrawal, 0);
+
+                // 构建表格行
+                tableHtml += `<tr>`;
+                tableHtml += `<td>第 ${year} 年</td>`;
+                tableHtml += `<td>$${currentBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                tableHtml += `<td class="highlight-interest">$${interestEarned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                tableHtml += `<td>$${balanceBeforeWithdrawal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                tableHtml += `<td>-$${annualWithdrawal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                tableHtml += `<td class="highlight-balance">$${balanceAfterWithdrawal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                tableHtml += `</tr>`;
+
+                // 更新本金
+                currentBalance = balanceAfterWithdrawal;
+            }
+
+            // 添加总利息行：只在“当年利息”列显示
+            tableHtml += `<tr style="background: #f8f9fa;">`;
+            tableHtml += `<td><strong>总计</strong></td>`;
+            tableHtml += `<td></td>`;
+            tableHtml += `<td class="total-interest">总利息: $${totalInterest.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+            tableHtml += `<td></td>`;
+            tableHtml += `<td></td>`;
+            tableHtml += `<td></td>`;
+            tableHtml += `</tr>`;
+
+            // 渲染结果
+            document.getElementById('compoundResultBody').innerHTML = tableHtml;
+            document.getElementById('compoundResultContainer').style.display = 'block';
+            
+            // 滚动到结果区域
+            document.getElementById('compoundResultContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 移动端输入框触控优化
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('touchstart', () => {
+                input.focus();
+            });
+        });
+    </script>
+</body>
+</html>
