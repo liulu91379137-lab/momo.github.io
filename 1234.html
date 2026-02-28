@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <!-- 移动端视口优化：禁止缩放、适配设备宽度 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>复利扣除计算器</title>
+    <style>
+        /* 全局样式重置 & 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            padding: 10px;
+            font-size: 14px; /* 移动端基础字体 */
+        }
+        .container {
+            background: white;
+            padding: 20px 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            max-width: 100%; /* 适应手机宽度 */
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            font-size: 18px; /* 移动端标题字号 */
+        }
+        /* 输入组：移动端适配 */
+        .input-group {
+            margin-bottom: 15px;
+            display: flex;
+            flex-direction: column; /* 移动端改为纵向排列，避免挤压 */
+            gap: 8px;
+        }
+        label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 15px;
+        }
+        input {
+            padding: 12px 10px;
+            font-size: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 100%; /* 占满容器宽度 */
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus {
+            border-color: #3498db; /* 聚焦高亮 */
+        }
+        /* 按钮：移动端全屏宽度，触控友好 */
+        button {
+            background-color: #27ae60;
+            color: white;
+            padding: 14px 0;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 20px 0;
+            width: 100%; /* 全屏宽 */
+            transition: background 0.3s;
+            touch-action: manipulation; /* 优化触控 */
+        }
+        button:hover, button:active {
+            background-color: #219653;
+        }
+
+        /* 表格容器：移动端横向滚动 */
+        .table-wrapper {
+            overflow-x: auto; /* 表格横向滚动 */
+            margin-top: 20px;
+            -webkit-overflow-scrolling: touch; /* 苹果移动端顺滑滚动 */
+        }
+        table {
+            width: 100%;
+            min-width: 500px; /* 保证表格列不挤压 */
+            border-collapse: collapse;
+            font-size: 14px;
+            text-align: center;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px 6px;
+            white-space: nowrap; /* 禁止单元格文字换行 */
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        /* 年份列靠左对齐 */
+        td:first-child {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        /* 重点高亮样式 */
+        .highlight-interest {
+            background-color: #fff3cd;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .highlight-balance {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+        .total-interest {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        /* 结果区域标题 */
+        #result-container h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 复利扣除计算器</h1>
+        
+        <div class="input-group">
+            <label>初始总金额 (美元):</label>
+            <input type="number" id="totalAmount" placeholder="例如: 100000" value="100000">
+        </div>
+        <div class="input-group">
+            <label>每年扣除金额 (美元):</label>
+            <input type="number" id="withdrawal" placeholder="例如: 25000" value="25000">
+        </div>
+        <div class="input-group">
+            <label>复利利率 (年 %):</label>
+            <input type="number" id="rate" placeholder="例如: 3.8" value="3.8" step="0.01">
+        </div>
+
+        <button onclick="calculate()">生成计算表格</button>
+
+        <!-- 结果展示区域 -->
+        <div id="result-container" style="display: none;">
+            <h3>计算结果详情</h3>
+            <div class="table-wrapper"> <!-- 表格滚动容器 -->
+                <table id="result-table">
+                    <thead>
+                        <tr>
+                            <th>年份</th>
+                            <th>年初本金</th>
+                            <th>当年利息</th>
+                            <th>扣除前总额</th>
+                            <th>当年扣除</th>
+                            <th>年末余额</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-body">
+                        <!-- 计算结果会自动插入到这里 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            const totalAmount = parseFloat(document.getElementById('totalAmount').value);
+            const annualWithdrawal = parseFloat(document.getElementById('withdrawal').value);
+            const rate = parseFloat(document.getElementById('rate').value) / 100;
+            
+            // 固定计算4年
+            const years = 4;
+
+            if (isNaN(totalAmount) || isNaN(annualWithdrawal) || isNaN(rate)) {
+                alert("请输入有效的数字！");
+                return;
+            }
+
+            let currentBalance = totalAmount;
+            let tableHtml = '';
+            let totalInterest = 0; // 累计总利息
+
+            for (let year = 1; year <= years; year++) {
+                // 1. 计算当年利息
+                const interestEarned = currentBalance * rate;
+                totalInterest += interestEarned; // 累加
+                
+                // 2. 计算扣除前总额
+                const balanceBeforeWithdrawal = currentBalance + interestEarned;
+                
+                // 3. 计算扣除后余额（年末余额，即下一年本金）
+                const balanceAfterWithdrawal = Math.max(balanceBeforeWithdrawal - annualWithdrawal, 0);
+
+                // 构建行HTML
+                tableHtml += `<tr>`;
+                tableHtml += `<td>第 ${year} 年</td>`;
+                tableHtml += `<td>$${currentBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                // 当年利息 - 醒目样式
+                tableHtml += `<td class="highlight-interest">$${interestEarned.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                // 扣除前总额
+                tableHtml += `<td>$${balanceBeforeWithdrawal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                // 当年扣除
+                tableHtml += `<td>-$${annualWithdrawal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                // 年末余额 - 绿色高亮
+                tableHtml += `<td class="highlight-balance">$${balanceAfterWithdrawal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`;
+                tableHtml += `</tr>`;
+
+                // 更新余额为下一年的本金
+                currentBalance = balanceAfterWithdrawal;
+            }
+
+            // 添加最后一行：总利息
+            tableHtml += `<tr style="background: #f8f9fa;">`;
+            tableHtml += `<td><strong>总计</strong></td>`;
+            tableHtml += `<td></td>`;
+            tableHtml += `<td class="total-interest" colspan="4">总利息: $${totalInterest.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>`; // 合并列，适配移动端
+            tableHtml += `</tr>`;
+
+            // 渲染到页面
+            document.getElementById('result-body').innerHTML = tableHtml;
+            document.getElementById('result-container').style.display = 'block';
+            
+            // 移动端自动滚动到结果区域
+            document.getElementById('result-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 移动端输入框优化：点击时自动聚焦，适配触控
+        const inputs = document.querySelectorAll('input');
+        inputs.forEach(input => {
+            input.addEventListener('touchstart', () => {
+                input.focus();
+            });
+        });
+    </script>
+</body>
+</html>
